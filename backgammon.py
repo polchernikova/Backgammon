@@ -4,16 +4,17 @@ import numpy as np
 def init_board():
     # инициализация игровой доски
     board = np.zeros(29, dtype=np.int8)
-    board[12] = -15
+    board[12] = -5
+    board[11] = -4
     board[24] = 15
     return board
 
 
 def display(board):
     print("Board:")
-    print(board[1:13])
-    print(board[24:12:-1])
-    print(board[27:29])
+    print('[%s]' % ' '.join(('%03s' % i for i in board[1:13])))
+    print('[%s]' % ' '.join(('%03s' % i for i in board[24:12:-1])))
+    print('[%s]' % ' '.join(('%03s' % i for i in board[27:29])))
 
 
 def update(board, move, player):
@@ -85,7 +86,6 @@ def generate_legal_move(board, die, player):
 
 
 def generate_all_legal_moves(board, dice, player):
-    moves = []
     boards = []
 
     possible_first_moves = generate_legal_move(board, dice[0], player)
@@ -93,9 +93,6 @@ def generate_all_legal_moves(board, dice, player):
         temp_board = update(board, move1, player)
         possible_second_moves = generate_legal_move(temp_board, dice[1], player)
         for move2 in possible_second_moves:
-            if player == -1 and move1[0] == move2[0] == 12 or player == 1 and move1[0] == move2[0] == 24:  # нельзя снимать 2 шашки с головы
-                continue
-            moves.append(np.array([move1, move2]))
             boards.append(update(temp_board, move2, player))
 
     if dice[0] != dice[1]:
@@ -104,25 +101,110 @@ def generate_all_legal_moves(board, dice, player):
             temp_board = update(board, move1, player)
             possible_second_moves = generate_legal_move(temp_board, dice[0], player)
             for move2 in possible_second_moves:
-                if player == -1 and move1[0] == move2[0] == 12 or player == 1 and move1[0] == move2[0] == 24:  # нельзя снимать 2 шашки с головы
-                    continue
-                moves.append(np.array([move1, move2]))
                 boards.append(update(temp_board, move2, player))
 
-    # если нет возмржности реализовать 2 хода, реализуем хотя бы один
-    if len(moves) == 0:
+    boards = delete_illegal_moves(boards, board, dice, player)
+
+    # если нет возможности реализовать 2 хода, реализуем хотя бы один
+    if len(boards) == 0:
+        # обеспечиваем dice[0] > dice[1] чтобы сделать по возможности больший ход
+        if dice[0] < dice[1]:
+            temp = dice[1]
+            dice[1] = dice[0]
+            dice[0] = temp
         possible_first_moves = generate_legal_move(board, dice[0], player)
         for move in possible_first_moves:
-            moves.append(np.array([move]))
             boards.append(update(board, move, player))
 
-        if dice[0] != dice[1]:
-            possible_first_moves = generate_legal_move(board, dice[1], player)
-            for move in possible_first_moves:
-                moves.append(np.array([move]))
-                boards.append(update(board, move, player))
+        # если нет возможности сделать больший ход, делаем меньший
+        if len(boards) == 0:
+            if dice[0] != dice[1]:
+                possible_first_moves = generate_legal_move(board, dice[1], player)
+                for move in possible_first_moves:
+                    boards.append(update(board, move, player))
 
-    return moves, np.unique(boards, axis=0)
+    boards = delete_illegal_moves(boards, board, dice, player)
+
+    return np.unique(boards, axis=0)
+
+
+def generate_moves(board, dice, player):
+    if dice[0] == dice[1]:  # проводим 2 хода если значения на костях совпали
+        result_boards = []
+        new_boards = generate_all_legal_moves(board, dice, player)
+        for new_board in new_boards:
+            for result_board in generate_all_legal_moves(new_board, dice, player):
+                result_boards.append(result_board)
+        result_boards = delete_illegal_moves(result_boards, board, dice, player)
+        return np.unique(result_boards, axis=0)
+    else:
+        result_boards = generate_all_legal_moves(board, dice, player)
+        result_boards = delete_illegal_moves(result_boards, board, dice, player)
+        return result_boards
+
+
+def first_move_six_six(board, player):
+    result_board = np.copy(board)
+    if player == -1:
+        result_board[12] += 2
+        result_board[6] -= 2
+    if player == 1:
+        result_board[24] -= 2
+        result_board[18] += 2
+    return result_board
+
+
+def delete_illegal_moves(boards, prev_board, dice, player):
+    # нельзя снимать 2 шашки с головы, только если это не случаи (3, 3), (4, 4), (6, 6) на первом ходу
+    first_checked_boards = []
+    special_dices = [[3, 3], [4, 4], [6, 6]]
+    for board in boards:
+        if prev_board[24] > board[24] + 1 \
+                and not (prev_board[24] == 15 and dice in special_dices) \
+                or prev_board[12] < board[12] - 1 \
+                and not (prev_board[12] == -15 and dice in special_dices) \
+                or prev_board[24] > board[24] + 2 \
+                or prev_board[12] < board[12] - 2:
+            continue  # пропускаем нелегальных ход
+        else:
+            first_checked_boards.append(board)
+
+    # особвый случай : первый ход и (6, 6) -- можно снять 2 шашки и сделать неполный ход
+    if dice == [6, 6] and prev_board[12] == -15 and player == 1:
+        first_checked_boards.append(first_move_six_six(prev_board, player))
+    if dice == [6, 6] and prev_board[12] == -15 and player == -1:
+        first_checked_boards.append(first_move_six_six(prev_board, player))
+
+    second_checks_boards = []
+
+    # Запрещено выставлять блок из 6 шашек, если впереди этого блока нет шашки соперника
+    for board in first_checked_boards:
+        no_illegal_blocks = True
+        for block_start in range(1, 18):
+            if np.all(board[block_start:block_start + 6] > 0):
+                # проверяем, что впереди блока нет шашки соперника
+                if block_start <= 7:
+                    if np.all(board[1:block_start] >= 0) and np.all(board[13:24] >= 0):
+                        no_illegal_blocks = False
+                        break
+                if block_start >= 12:
+                    if np.all(board[13:block_start] >= 0):
+                        no_illegal_blocks = False
+                        break
+            if np.all(board[block_start:block_start + 6] < 0):
+                if block_start <= 7:
+                    if np.all(board[1:block_start] <= 0):
+                        no_illegal_blocks = False
+                        break
+                if block_start >= 12:
+                    if np.all(board[1:13] <= 0) and np.all(board[14:block_start] <= 0):
+                        no_illegal_blocks = False
+                        break
+
+        if no_illegal_blocks:
+            second_checks_boards.append(board)
+
+    return second_checks_boards
 
 
 def roll_dice():
@@ -132,14 +214,13 @@ def roll_dice():
 
 
 def main():
-    board = init_board()  #
+    board = init_board()
     display(board)
     a = roll_dice()
     print("dice: ", a)
-    _, boards = generate_all_legal_moves(board, [5, 3], 1)
+    boards = generate_all_legal_moves(board, [5, 3], 1)
     for b in boards:
         display(b)
-
 
 if __name__ == '__main__':
     main()
