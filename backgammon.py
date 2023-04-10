@@ -4,17 +4,24 @@ import numpy as np
 def init_board():
     # инициализация игровой доски
     board = np.zeros(29, dtype=np.int8)
-    board[12] = -5
-    board[11] = -4
-    board[24] = 15
+    board[12] = -13
+    board[11] = -1
+    board[10] = -1
+    board[24] = 13
+    board[23] = 1
+    board[22] = 1
     return board
 
 
 def display(board):
     print("Board:")
-    print('[%s]' % ' '.join(('%03s' % i for i in board[1:13])))
-    print('[%s]' % ' '.join(('%03s' % i for i in board[24:12:-1])))
-    print('[%s]' % ' '.join(('%03s' % i for i in board[27:29])))
+    print('|%s|' % ' | '.join(('%03s' % i for i in range(1, 13))))
+    print('|---------------------------------------------------------------------|')
+    print('|%s|' % ' | '.join(('%03s' % i for i in board[1:13])))
+    print('|%s|' % ' | '.join(('%03s' % i for i in board[24:12:-1])))
+    print('|---------------------------------------------------------------------|')
+    print('|%s|' % ' | '.join(('%03s' % i for i in range(14, 26))))
+    print('Beard off: [%s]' % ','.join(('%03s' % i for i in board[27:29])))
 
 
 def update(board, move, player):
@@ -218,7 +225,7 @@ def main():
     display(board)
     a = roll_dice()
     print("dice: ", a)
-    boards = generate_all_legal_moves(board, [5, 3], 1)
+    boards = generate_moves(board, [5, 5], 1)
     for b in boards:
         display(b)
 
