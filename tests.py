@@ -41,8 +41,7 @@ class TestStringMethods(unittest.TestCase):
         np.testing.assert_array_equal(generate_moves(board, [1, 1], -1), expected)
 
         expected = np.array(
-            [[0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, -13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, -2, 0, 0, 0, 0, 0, -13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0]])
+            [[0, 0, 0, -1, 0, 0, 0, 0, 0, -1, 0, 0, -13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15, 0, 0, 0, 0]])
 
         np.testing.assert_array_equal(generate_moves(board, [3, 3], -1), expected)
 
@@ -67,8 +66,7 @@ class TestStringMethods(unittest.TestCase):
         np.testing.assert_array_equal(generate_moves(board, [1, 1], 1), expected)
 
         expected = np.array(
-            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0],
-             [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 13, 0, 0, 0, 0]])
+            [[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -15, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 13, 0, 0, 0, 0]])
 
         np.testing.assert_array_equal(generate_moves(board, [3, 3], 1), expected)
 
@@ -129,6 +127,17 @@ class TestStringMethods(unittest.TestCase):
             [[0, 0, 0, 0, 0, 0, 0, 0, 0, -1, -1, -1, -11, -1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 13, 0, 0, 0, 0]])
 
         np.testing.assert_array_equal(generate_moves(board, [5, 6], 1), expected)
+
+    def test_second_move(self):
+        board = np.zeros(29, dtype=np.int8)
+        board[12] = -15
+        board[24] = 14
+        board[21] = 1
+
+        expected = np.array(
+            [[0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, -14, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 14, 0, 0, 0, 0]])
+
+        np.testing.assert_array_equal(generate_moves(board, [5, 5], -1), expected)
 
 
 if __name__ == '__main__':
