@@ -1,4 +1,5 @@
 import numpy as np
+from enum import Enum
 
 
 def init_board():
@@ -34,8 +35,25 @@ def update(board, move, player):
     return temp_board
 
 
+class GameResult(Enum):
+    NOT_OVER = 1
+    OIN = 2
+    MARS = 3
+
+def game_result(board):
+    if board[27] != 15 and board[28] != -15:
+        return GameResult.NOT_OVER
+    if board[27] == 15 and board[28] == 0:
+        return GameResult.MARS
+    if board[28] == -15 and board[27] == 0:
+        return GameResult.MARS
+    else:
+        return GameResult.OIN
+
+
 def is_game_over(board):
-    return board[27] == 15 or board[28] == -15
+    return game_result(board) != GameResult.NOT_OVER
+
 
 
 # рассмотреть случай марса
@@ -71,7 +89,7 @@ def generate_legal_move(board, die, player):
         if sum(board[1:13] < 0) + sum(board[19:25] < 0) == 0:
             if board[13 - die] < 0:
                 possible_moves.append(np.array([13 - die, 28]))
-            elif not is_game_over(board):  # smá fix
+            elif not is_game_over(board):
                 # Если все шашки в доме находятся ближе к краю доски, чем выпавшее число очков, то может выставляться
                 # за доску шашка из пункта с наибольшим номером
                 s = np.max(np.where(board[13:19] < 0)[0])
@@ -165,6 +183,7 @@ def first_move_6_6(board, player):
         result_board[18] += 2
     return result_board
 
+
 def first_move_3_3(board, player):
     result_board = np.copy(board)
     if player == -1:
@@ -176,6 +195,7 @@ def first_move_3_3(board, player):
         result_board[21] += 1
         result_board[15] += 1
     return result_board
+
 
 def delete_illegal_moves(boards, prev_board, dice, player):
     # нельзя снимать 2 шашки с головы, только если это не случаи (3, 3), (4, 4), (6, 6) на первом ходу
@@ -199,7 +219,10 @@ def delete_illegal_moves(boards, prev_board, dice, player):
         first_checked_boards.append(first_move_6_6(prev_board, player))
 
     # особый случай: первый ход и (3, 3) -- надо ходить именно на позиции 9 и 3 (21 и 15)
-    if dice == [3, 3]:
+    if dice == [3, 3] and prev_board[12] == -15 and player == 1:
+        first_checked_boards.clear()
+        first_checked_boards.append(first_move_3_3(prev_board, player))
+    if dice == [3, 3] and prev_board[12] == -15 and player == -1:
         first_checked_boards.clear()
         first_checked_boards.append(first_move_3_3(prev_board, player))
 
@@ -241,38 +264,68 @@ def roll_dice():
     return list(dice)
 
 
+def input_moves():
+    while True:
+        try:
+            yield list(int(input()))
+        except ValueError:
+            break
+
+
 def play_game(player):
     board = init_board()
     display(board)
     while not is_game_over(board):
-        print("Соперник делает ход...")
+        print("Ход первого игрока...")
         dice = roll_dice()
         print("Кости: ", dice)
         moves = generate_moves(board, dice, player)
         move_index = np.random.randint(0, len(moves))
         board = moves[move_index]
         display(board)
-        print("Ваш ход:")
+        print("Ход второго игрока...")
         dice = roll_dice()
         print("Кости: ", dice)
         moves = generate_moves(board, dice, -player)
         move_index = np.random.randint(0, len(moves))
         board = moves[move_index]
         display(board)
+    print("Game result is", game_result(board))
 
 
-def play_game_with_bot(player):
+def play_game_with_bot(player: object) -> object:
     board = init_board()
     display(board)
     while not is_game_over(board):
-        print("Соперник делает ход...")
+        print("Ваш ход...")
         dice = roll_dice()
         print("Кости: ", dice)
-        moves = generate_moves(board, dice, player)
-        move_index = np.random.randint(0, len(moves))
-        board = moves[move_index]
+        print("Наберите свой ход в формате: <from> <to>")
+        print("Каждый новый ход набирайте в отдельной строке")
+        print("По окончанию набора введите пустую строку")
+        while True:  # цикл "пока пользователь не введет корректные ходы"
+            new_board = board
+            while True:
+                move = list(map(int, input().split()))
+                if len(move) == 0:
+                    break
+                if len(move) == 1 or len(move) > 2:
+                    print("Неправильный формат ввода. Попробуйте ещё раз")
+                    continue
+                new_board = update(new_board, move, player)
+            allowed_board = False
+            for possible_board in generate_moves(board, dice, player):
+                if list(new_board) == list(possible_board):
+                    allowed_board = True
+                    break
+            if not allowed_board:
+                print("Кто-то пытается жульничать. Введите ход, соответствующий правилам")
+                continue
+            else:
+                break
+        board = new_board
         display(board)
-        print("Ваш ход:")
+        print("Соперник делает ход:")
         dice = roll_dice()
         print("Кости: ", dice)
         moves = generate_moves(board, dice, -player)
@@ -282,9 +335,13 @@ def play_game_with_bot(player):
 
 
 def main():
-    board = init_board()
-    for b in generate_moves(board, [3, 3], 1):
-        display(b)
+    # board = init_board()
+    # for b in generate_moves(board, [3, 3], 1):
+    #     display(b)
+
+    # play_game_with_bot(1)
+
+    play_game(-1)
 
 
 if __name__ == '__main__':
