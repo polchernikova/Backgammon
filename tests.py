@@ -140,5 +140,28 @@ class TestStringMethods(unittest.TestCase):
         np.testing.assert_array_equal(generate_moves(board, [5, 5], -1), expected)
 
 
+    def test_no_blocks_any_move(self):
+        board = np.zeros(29, dtype=np.int8)
+        board[12] = -10
+        board[10] = -1
+        board[24] = 12
+        board[21] = -1
+        board[13] = 1
+        board[14] = 1
+        board[15] = 1
+        board[16] = 1
+        board[17] = 1
+        board[19] = 2
+        board[20] = -1
+
+        unexpected = np.copy(board)
+        unexpected[24] = 11
+        unexpected[22] = 1
+        unexpected[19] = 1
+        unexpected[17] = 2
+
+        for b in generate_moves(board, [1, 1], 1):
+            self.assertFalse(np.array_equal(unexpected, b))
+
 if __name__ == '__main__':
     unittest.main()

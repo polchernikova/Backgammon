@@ -5,8 +5,17 @@ from enum import Enum
 def init_board():
     # инициализация игровой доски
     board = np.zeros(29, dtype=np.int8)
-    board[12] = -15
-    board[24] = 15
+    board[12] = -10
+    board[10] = -1
+    board[24] = 12
+    board[21] = -1
+    board[13] = 1
+    board[14] = 1
+    board[15] = 1
+    board[16] = 1
+    board[17] = 1
+    board[19] = 2
+    board[20] = -1
     return board
 
 
@@ -40,20 +49,22 @@ class GameResult(Enum):
     OIN = 2
     MARS = 3
 
+
 def game_result(board):
     if board[27] != 15 and board[28] != -15:
-        return GameResult.NOT_OVER
+        return GameResult.NOT_OVER, 0
     if board[27] == 15 and board[28] == 0:
-        return GameResult.MARS
+        return GameResult.MARS, 1
     if board[28] == -15 and board[27] == 0:
-        return GameResult.MARS
+        return GameResult.MARS, -1
+    if board[27] == 15:
+        return GameResult.OIN, 1
     else:
-        return GameResult.OIN
+        return GameResult.OIN, -1
 
 
 def is_game_over(board):
-    return game_result(board) != GameResult.NOT_OVER
-
+    return game_result(board)[0] != GameResult.NOT_OVER
 
 
 # рассмотреть случай марса
@@ -116,6 +127,8 @@ def generate_all_legal_moves(board, initial_board, dice, player):
     possible_first_moves = generate_legal_move(board, dice[0], player)
     for move1 in possible_first_moves:
         temp_board = update(board, move1, player)
+        if not is_move_legal(temp_board, board, dice, player):
+            continue
         possible_second_moves = generate_legal_move(temp_board, dice[1], player)
         for move2 in possible_second_moves:
             boards.append(update(temp_board, move2, player))
@@ -124,6 +137,8 @@ def generate_all_legal_moves(board, initial_board, dice, player):
         possible_first_moves = generate_legal_move(board, dice[1], player)
         for move1 in possible_first_moves:
             temp_board = update(board, move1, player)
+            if not is_move_legal(temp_board, board, dice, player):
+                continue
             possible_second_moves = generate_legal_move(temp_board, dice[0], player)
             for move2 in possible_second_moves:
                 boards.append(update(temp_board, move2, player))
@@ -162,6 +177,7 @@ def generate_moves(board, dice, player):
     if dice[0] == dice[1]:  # проводим 2 хода если значения на костях совпали
         result_boards = []
         new_boards = generate_all_legal_moves(board, board, dice, player)
+        new_boards = delete_illegal_moves(new_boards, board, dice, player)
         for new_board in new_boards:
             for result_board in generate_all_legal_moves(new_board, board, dice, player):
                 result_boards.append(result_board)
@@ -195,6 +211,10 @@ def first_move_3_3(board, player):
         result_board[21] += 1
         result_board[15] += 1
     return result_board
+
+
+def is_move_legal(board, prev_board, dice, player):
+    return len(delete_illegal_moves([board], prev_board, dice, player)) != 0
 
 
 def delete_illegal_moves(boards, prev_board, dice, player):
@@ -259,7 +279,7 @@ def delete_illegal_moves(boards, prev_board, dice, player):
 
 
 def roll_dice():
-    # rolls the dice
+    # бросок костей
     dice = np.random.randint(1, 7, 2)
     return list(dice)
 
@@ -290,10 +310,12 @@ def play_game(player):
         move_index = np.random.randint(0, len(moves))
         board = moves[move_index]
         display(board)
-    print("Game result is", game_result(board))
+    result, winner = game_result(board)
+    print("Результат -", result)
+    print("Победил", winner)
 
 
-def play_game_with_bot(player: object) -> object:
+def play_game_with_bot(player):
     board = init_board()
     display(board)
     while not is_game_over(board):
@@ -335,13 +357,16 @@ def play_game_with_bot(player: object) -> object:
 
 
 def main():
-    # board = init_board()
-    # for b in generate_moves(board, [3, 3], 1):
-    #     display(b)
+    board = init_board()
+    display(board)
+    for b in generate_moves(board, [1, 1], 1):
+        if b[17] == 2 and b[19] == 1 and b[24] == 11 and b[22] == 1:
+            display(b)
 
     # play_game_with_bot(1)
 
-    play_game(-1)
+    # play_game(1)
+    # play_game(-1)
 
 
 if __name__ == '__main__':
