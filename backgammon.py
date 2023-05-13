@@ -4,18 +4,9 @@ from enum import Enum
 
 def init_board():
     # инициализация игровой доски
-    board = np.zeros(29, dtype=np.int8)
-    board[12] = -10
-    board[10] = -1
-    board[24] = 12
-    board[21] = -1
-    board[13] = 1
-    board[14] = 1
-    board[15] = 1
-    board[16] = 1
-    board[17] = 1
-    board[19] = 2
-    board[20] = -1
+    board = np.zeros(27, dtype=float)
+    board[12] = -15
+    board[24] = 15
     return board
 
 
@@ -27,7 +18,7 @@ def display(board):
     print('|%s|' % ' | '.join(('%03s' % i for i in board[24:12:-1])))
     print('|---------------------------------------------------------------------|')
     print('|%s|' % ' | '.join(('%03s' % i for i in range(24, 12, -1))))
-    print('Выкинуто: [%s]' % ','.join(('%03s' % i for i in board[27:29])))
+    print('Выкинуто: [%s]' % ','.join(('%03s' % i for i in board[25:27])))
 
 
 def update(board, move, player):
@@ -51,13 +42,13 @@ class GameResult(Enum):
 
 
 def game_result(board):
-    if board[27] != 15 and board[28] != -15:
-        return GameResult.NOT_OVER, 0
-    if board[27] == 15 and board[28] == 0:
+    if board[25] != 15 and board[26] != -15:
+        return GameResult.NOT_OVER, None
+    if board[25] == 15 and board[26] == 0:
         return GameResult.MARS, 1
-    if board[28] == -15 and board[27] == 0:
+    if board[26] == -15 and board[25] == 0:
         return GameResult.MARS, -1
-    if board[27] == 15:
+    if board[25] == 15:
         return GameResult.OIN, 1
     else:
         return GameResult.OIN, -1
@@ -67,10 +58,6 @@ def is_game_over(board):
     return game_result(board)[0] != GameResult.NOT_OVER
 
 
-# рассмотреть случай марса
-# сделать енам статусов игры: не звершена, марс, норм завершена
-# и поменять реализацию is_game_over
-
 def generate_legal_move(board, die, player):
     possible_moves = []
 
@@ -78,14 +65,14 @@ def generate_legal_move(board, die, player):
         # ходы с выбрасыванием шашки
         if sum(board[7:25] > 0) == 0:
             if board[die] > 0:
-                possible_moves.append(np.array([die, 27]))
+                possible_moves.append(np.array([die, 25]))
 
             elif not is_game_over(board):
                 # Если все шашки в доме находятся ближе к краю доски, чем выпавшее число очков, то может выставляться
                 # за доску шашка из пункта с наибольшим номером
                 start_pos = np.max(np.where(board[1:7] > 0)[0] + 1)
                 if start_pos < die:
-                    possible_moves.append(np.array([start_pos, 27]))
+                    possible_moves.append(np.array([start_pos, 25]))
 
         possible_start_positions = np.where(board[0:25] > 0)[0]
 
@@ -99,13 +86,13 @@ def generate_legal_move(board, die, player):
         # ходы с выбрасыванием шашки
         if sum(board[1:13] < 0) + sum(board[19:25] < 0) == 0:
             if board[13 - die] < 0:
-                possible_moves.append(np.array([13 - die, 28]))
+                possible_moves.append(np.array([13 - die, 26]))
             elif not is_game_over(board):
                 # Если все шашки в доме находятся ближе к краю доски, чем выпавшее число очков, то может выставляться
                 # за доску шашка из пункта с наибольшим номером
                 s = np.max(np.where(board[13:19] < 0)[0])
                 if s < die:
-                    possible_moves.append(np.array([13 + s, 28]))
+                    possible_moves.append(np.array([13 + s, 26]))
 
         # finding all other legal options
         start_positions = np.where(board[0:25] < 0)[0]
@@ -357,15 +344,14 @@ def play_game_with_bot(player):
 
 
 def main():
-    board = init_board()
-    display(board)
-    for b in generate_moves(board, [1, 1], 1):
-        if b[17] == 2 and b[19] == 1 and b[24] == 11 and b[22] == 1:
-            display(b)
+    # board = init_board()
+    # display(board)
+    # for b in generate_moves(board, [1, 1], 1):
+    #    display(b)
 
     # play_game_with_bot(1)
 
-    # play_game(1)
+    play_game(1)
     # play_game(-1)
 
 
