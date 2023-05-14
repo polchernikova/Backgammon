@@ -28,7 +28,7 @@ class Model:
 
         # self.load(path)
 
-    def train(self, n_episodes=2000):
+    def train(self, n_episodes=50000):
         print("Training started")
         for episode in range(1, n_episodes + 1):
             player = random.randint(0, 1)
@@ -36,7 +36,7 @@ class Model:
             game.play()
             self.reset_trace()
 
-            if episode % 500 == 0:
+            if episode % 1000 == 0:
                 self.test()
                 self.save()
 
@@ -47,7 +47,7 @@ class Model:
         print("Testing started")
         wins = 0
         games = 0
-        for episode in range(1, 1001):
+        for episode in range(1, 501):
             player = random.randint(0, 1)
             game = Game(TDGammonAgent(self, player), RandomAgent(1 - player))
             game.play()
