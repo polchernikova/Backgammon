@@ -2,9 +2,8 @@ from model import Model
 
 
 def main():
-    m = Model()
+    m = Model(units=40, lamda=0.7, alpha=0.1)
     m.train()
-    m.test()
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ def encode_state(board, player):
             state[i * 4] = 1
             state[i * 4 + 1] = 1
             state[i * 4 + 2] = 1
-            state[i * 4 + 3] = (checkers - 3) / 2
+            state[i * 4 + 3] = (checkers - 3) / 12
 
     for i in range(0, 24):
         checkers = board[i + 1]
@@ -40,7 +40,7 @@ def encode_state(board, player):
             state[i * 4 + 96] = 1
             state[i * 4 + 1 + 96] = 1
             state[i * 4 + 2 + 96] = 1
-            state[i * 4 + 3 + 96] = (-checkers - 3) / 2
+            state[i * 4 + 3 + 96] = (-checkers - 3) / 12
 
     state[192] = board[25] / 15
     state[193] = board[26] / 15

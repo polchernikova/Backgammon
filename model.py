@@ -14,9 +14,9 @@ from utils import to_backgammon_color, encode_state
 
 class Model:
 
-    def __init__(self, path=None):
+    def __init__(self, units=40, lamda=0.7, alpha=0.1):
         inputs = tf.keras.Input(shape=(196,))
-        x = tf.keras.layers.Dense(40, activation="sigmoid")(inputs)
+        x = tf.keras.layers.Dense(units, activation="sigmoid")(inputs)
         outputs = tf.keras.layers.Dense(1, activation="sigmoid")(x)
         self._model = tf.keras.Model(inputs=inputs, outputs=outputs)
 
@@ -26,11 +26,12 @@ class Model:
         self._state = encode_state(game._board, 0)
         self._value = tf.Variable(self._model(self._state[np.newaxis]))
 
-        # self.load(path)
+        self._lambda = lamda
+        self._alpha = alpha
 
-    def train(self, n_episodes=50000):
+    def train(self, episodes=50000):
         print("Training started")
-        for episode in range(1, n_episodes + 1):
+        for episode in range(1, episodes + 1):
             player = random.randint(0, 1)
             game = Game(TDGammonAgent(self, player), TDGammonAgent(self, 1 - player))
             game.play()
@@ -38,16 +39,14 @@ class Model:
 
             if episode % 1000 == 0:
                 self.test()
-                self.save()
 
-        self.save()
         print("Training ended")
 
     def test(self):
         print("Testing started")
         wins = 0
         games = 0
-        for episode in range(1, 501):
+        for episode in range(1, 500):
             player = random.randint(0, 1)
             game = Game(TDGammonAgent(self, player), RandomAgent(1 - player))
             game.play()
@@ -74,7 +73,7 @@ class Model:
         return best_move
 
     def update_weights(self, board, player):
-        state = encode_state(board, player)
+        state = encode_state(board, 1 - player)  # next state means other player
         with tf.GradientTape() as tape:
             value = self._model(state[np.newaxis])
 
@@ -92,32 +91,14 @@ class Model:
         else:
             reward = 0
 
-        error = tf.reduce_sum(reward + value - self._value)
         for i in range(len(grads)):
-            self._trace[i].assign((0.7 * self._trace[i]) + grads[i])
+            self._trace[i].assign((self._lambda * self._trace[i]) + grads[i])
 
-            grad_trace = 0.1 * error * self._trace[i]
+            grad_trace = self._alpha * tf.reduce_sum(reward + value - self._value) * self._trace[i]
             self._model.trainable_variables[i].assign_add(grad_trace)
 
         self._state = tf.Variable(state)
         self._value = tf.Variable(value)
-
-    def load(self, path):
-        checkpoint = tf.train.Checkpoint(model=self._model, state=self._state, value=self._value)
-        checkpoint.restore(path)
-
-    def save(self):
-        if not os.path.exists('checkpoint'):
-            os.mkdir('checkpoint')
-
-        directory = 'checkpoint/' + str(datetime.datetime.now()).replace(' ', '_')
-        if not os.path.exists(directory):
-            os.mkdir(directory)
-
-        checkpoint = tf.train.Checkpoint(model=self._model, state=self._state, value=self._value)
-        path = checkpoint.save(directory)
-
-        return path
 
     def reset_trace(self):
         for i in range(len(self._trace)):
